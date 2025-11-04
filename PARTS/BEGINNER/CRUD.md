@@ -133,6 +133,15 @@ db.employees.find({}, { name: 1, department: 1, _id: 0 })
 | `$inc`                       | Increment numeric field             |
 | `$rename`                    | Rename a field                      |
 
+| Operator  | Description         | Example                               |
+| --------- | ------------------- | ------------------------------------- |
+| `$set`    | Set a new value     | `{ $set: { age: 30 } }`               |
+| `$inc`    | Increment/decrement | `{ $inc: { salary: 5000 } }`          |
+| `$unset`  | Remove a field      | `{ $unset: { tempField: "" } }`       |
+| `$rename` | Rename a field      | `{ $rename: { dept: "department" } }` |
+| `$mul`    | Multiply field      | `{ $mul: { salary: 1.1 } }`           |
+
+
 #### Examples:
 
 ```js
