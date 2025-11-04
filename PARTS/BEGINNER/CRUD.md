@@ -328,7 +328,4 @@ You’ve now mastered:
 * All basic query and logical operators
 * Sorting, limiting, and projections
 
----
 
-Would you like me to prepare **Beginner Part 4–7 notes next** (covering indexes, data types, aggregation intro, and nested queries)?
-I’ll format it in the same Markdown style for long-term use.
