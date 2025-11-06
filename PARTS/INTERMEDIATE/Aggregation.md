@@ -2,6 +2,8 @@ Absolutely! Here is the **full MongoDB Aggregation Pipeline Cheat-Sheet** — ex
 
 This will become your aggregation Bible 📖🔥
 
+# For EXPRESSIONS WE WILL USE DOLAR INSIDE FOR MCLAS>> Math, Compare, Logic, Array, String
+
 ---
 
 # ✅ **MongoDB Aggregation Topics + When to Use + Real Examples**
