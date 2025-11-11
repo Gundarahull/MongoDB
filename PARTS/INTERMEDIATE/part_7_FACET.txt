@@ -1,0 +1,358 @@
+🧪 SECTION A — SUMMARY CARDS (Facet required)
+✅ Q1 — Build 4 summary cards in ONE query using $facet:
+
+From orders collection:
+
+Return:
+
+{
+  totalOrders,
+  totalRevenue,
+  last30DaysRevenue,
+  avgOrderValue
+}
+
+
+Rules:
+
+Must use one single aggregation
+
+Must use $facet
+
+last30Days = createdAt >= now - 30 days
+
+avgOrderValue = totalRevenue / totalOrders
+
+✅ Output shape:
+
+{
+  cards: {
+     totalOrders: 422,
+     totalRevenue: 1543000,
+     last30DaysRevenue: 112000,
+     avgOrderValue: 3654
+  }
+}
+>> db.orders.aggregate([
+  // Step 1: Unwind items array
+  {
+    $unwind: "$items"
+  },
+
+  // Step 2: Apply multiple analytics pipelines using $facet
+  {
+    $facet: {
+      totalOrders: [
+        {
+          $group: {
+            _id: null,
+            totalOrders: { $sum: 1 }
+          }
+        }
+      ],
+
+      totalRevenue: [
+        {
+          $group: {
+            _id: null,
+            totalRevenue: {
+              $sum: {
+                $multiply: ["$items.qty", "$items.unitPrice"]
+              }
+            }
+          }
+        }
+      ],
+
+      last30Days: [
+        {
+          $addFields: {
+            daysDifference: {
+              $dateDiff: {
+                startDate: "$createdAt",
+                endDate: "$$NOW",
+                unit: "day"
+              }
+            }
+          }
+        },
+        {
+          $match: {
+            daysDifference: { $lte: 30 }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            last30DaysRevenue: {
+              $sum: {
+                $multiply: ["$items.qty", "$items.unitPrice"]
+              }
+            }
+          }
+        }
+      ],
+
+      avgOrder: [
+        {
+          $group: {
+            _id: null,
+            avgOrder: { $avg: "$items.unitPrice" }
+          }
+        }
+      ]
+    }
+  },
+
+  // Step 3: Merge all metrics into a single output object
+  {
+    $project: {
+      _id: 0,
+      cards: {
+        totalOrders: { $arrayElemAt: ["$totalOrders.totalOrders", 0] },
+        totalRevenue: { $arrayElemAt: ["$totalRevenue.totalRevenue", 0] },
+        last30DaysRevenue: { $arrayElemAt: ["$last30Days.last30DaysRevenue", 0] },
+        avgOrder: { $arrayElemAt: ["$avgOrder.avgOrder", 0] }
+      }
+    }
+  }
+])
+
+
+
+🧪 SECTION B — CATEGORY DASHBOARD
+✅ Q2 — Category performance table
+
+From orders.items:
+
+Each item contains:
+
+{ productId, title, category, qty, price }
+
+
+Produce:
+
+{
+  category,
+  totalUnitsSold,
+  totalRevenue,
+  avgPrice
+}
+
+
+Rules:
+
+Must use $unwind
+
+Must group by category
+
+Must sort categories by revenue (desc)
+>> db.orders.aggregate(
+  [
+    {
+      $unwind:"$items"
+    },
+    {
+      $group:{
+        _id:"$items.category",
+        totalUnitsSold:{
+          $sum:1
+        },
+        totalRevnue:{
+          $sum:{
+            $multiply:["$items.qty","$items.unitPrice"]
+          }
+        },
+        avgPrice:{
+          $avg:"$items.unitPrice"
+        }
+      }
+    },
+    {
+      $sort:{totalRevnue:-1}
+    }
+  ]
+)
+
+🧪 SECTION C — TIME SERIES ANALYTICS
+✅ Q3 — Monthly revenue chart (last 6 months)
+
+Output:
+
+{
+  month: "2025-01",
+  revenue: 123000
+}
+
+>>db.orders.aggregate(
+  [
+    {
+      $addFields:{
+        monthDiff:{ 
+          $dateDiff:{
+            startDate:"$createdAt",
+            endDate:"$$NOW",
+            unit:"month"
+          }
+      	}
+      }
+    },
+    {
+      $match:{
+        monthDiff:{
+          $lte:6
+        }
+      }
+    },
+    {
+      $unwind:"$items"
+    },
+    {
+      $group:{
+        _id:{
+          $dateTrunc:{
+            date:"$createdAt",
+            unit:"month"
+          }
+        },
+        totalRevenue:{
+          $sum:{
+            $multiply:["$items.qty","$items.unitPrice"]
+          }
+        }
+      } 
+    },
+    {
+      $project:{
+        month:{
+          $dateToString:{format:"%Y-%m",date:"$_id"}
+        }, 
+      	totalRevune:"$totalRevenue",
+        _id:0
+    	}
+    },
+    {
+      $sort:{
+        _id:1
+      }
+    }
+  ]
+)
+
+
+Rules:
+
+Use $dateTrunc
+
+Use $match to restrict to last 6 months
+
+Sort increasing by month
+
+🧪 SECTION D — DRILLDOWN DASHBOARD
+✅ Q4 — For a selected category, show top 5 brands
+
+Input category: "Laptop"
+
+Output:
+
+{
+   brand,
+   unitsSold,
+   revenue
+}
+
+>> db.orders.aggregate(
+  [
+    {
+      $unwind:"$items"
+    },
+    {
+      $match:{
+        "items.category":"Laptop"
+      }
+    },
+    {
+      $group:{
+        _id:null,
+        unitsSold:{
+          $sum:"$items.qty"
+        },
+        title:{$first:"$items.title"},
+        revenue:{
+          $sum:{
+            $multiply:["$items.qty","$items.unitPrice"]
+          }
+        }
+      }
+    },
+    {
+      $project:{
+        brand:"$title",
+        unitsSold:"$unitsSold",
+        revenue:"$revenue",
+        _id:0
+      }
+    }
+  ]
+)
+Rules:
+
+Filter by category
+
+Group by brand
+
+$sort by revenue
+
+$limit 5
+
+🧪 SECTION E — FULL-FLEDGED DASHBOARD (FACET)
+✅ Q5 — Build an e-commerce admin dashboard with 3 parallel sections
+
+Return:
+
+{
+  cards: {
+    totalUsers,
+    totalOrders,
+    totalRevenue
+  },
+  topCategories: [
+      { category, unitsSold, revenue }
+  ],
+  monthlyChart: [
+      { month, revenue }
+  ]
+}
+
+
+Rules:
+
+Must use $facet
+
+Must use $unwind for items inside pipelines
+
+Must use $dateTrunc for month
+
+Must have exact 3 facets: cards, topCategories, monthlyChart
+
+🧪 SECTION F — BONUS ROUND (Hard)
+✅ Q6 — Return a combined dashboard in a SINGLE document:
+{
+  today: { orders, revenue },
+  yesterday: { orders, revenue },
+  last7Days: { orders, revenue },
+  last30Days: { orders, revenue }
+}
+
+
+Rules:
+
+Must use $facet
+
+Each facet must calculate:
+✅ orders count
+✅ total revenue
+
+Use $match with a dynamic date window
+
+No multi-queries allowed
