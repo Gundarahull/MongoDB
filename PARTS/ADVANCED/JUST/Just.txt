@@ -1,0 +1,134 @@
+>> security:{
+    authorization:enabled
+}
+
+
+>> Roles:
+    read || readWrite
+    >> Peak Sab ka Baap: ['userAdminAnyDatabase','dbAdminAnyDatabase']
+
+>> db.auth("username","password")
+>> db.logout()
+
+>> No option to update username, password, Delete the previous
+db.admin.createUser({
+    username:"rahul",
+    password:"rahul",
+    roles:[
+        {role:"read",db:"groupDB"},
+        {role:"readWrite",db:"acadenyDB"}
+    ]
+})
+
+==============================================================================================
+
+>> Replication and Sharding
+
+>> Duplication of data , when the primary DB is go down
+    >> Replication is Asynchrously for a Set of Time like every 3 mins, 1 day etc
+
+    >> Read calls will move to secondary DB and Write calls will go to Primary DB
+
+    >> Exercise:
+        Creating Server with differnt Port number for replica Set, --replset r01(name)
+        mongo --port 27018 (particlar server)
+        >> rs.initiate({    //rs means replicaSet
+            _id:"replicaSet_name",
+            members:[
+                {_id:0,host:"localhost:27018"}, //_id:0 is a Primary
+                {_id:1,host:"localhost:27019"}, //_id:1 is a secondary
+                {_id:2,host:"localhost:27020"}  // same
+            ]
+        })
+        >> rs.status()
+        >> Need to give permissons for secondary dbs slaveOk:true
+
+>> SHARDING
+
+
+
+=============================================================================================
+
+>> Transcations
+    >> Aithe anni avvu.. lekapothe yem vadhu dengeyandi..
+    >> commit and rollBack
+    >> ACID 
+        >>  Atomicity  >> Aithe anni avvu.. lekapothe yem vadhu dengeyandi..
+        >>  Constiency >> Uniquess should be , refering is exist or not, NO VIOLATION
+        >>  Isolation  >> Paraellely and Independetly
+                        -- First Lock the First Transcation then Second Opened for Write Operations
+        >>  Durability >> storing the data
+    >> Sessions
+        >> creating Session
+        >> creating Transcation
+        >> commit Transcation
+        >> Abort Trsnacation
+
+====================================================================================
+
+>> DATE Queries
+    >> ISODate("2001-03-21") //2025-03-21T00:00;00 // Z >> UTC ,T>>Separater for Time
+    >> $year:"$dob"
+    >> $month:"$dob"
+    >> $dayOfYear:"$dob" >> 1 to 365
+    >> $dayOfMonth:"$dob" >> 1 to 31
+    >> $dayOfWeek:"$dob" >> 1 to 7
+    >> $dateTrunc:{
+        start:"$dob",
+        unit:"day" // day, month, year
+    }
+    >> $dateDiff:{
+        startDate:"$dob",
+        endDate:"$$NOW",
+        unit:"day", // day, month, year
+    }
+    >> $dateToString:{
+        format:"%y-%m",date:"$dob"
+    }
+    >> db.collection.aggregate([
+        {
+            $project: {
+                created_at_plus_1_day: {
+                    $dateAdd: {
+                    startDate: "$created_at",
+                    unit: "day",
+                    amount: 1
+                    }
+                }
+            }
+        }
+        ])
+
+    >> db.collection.aggregate([
+        {
+            $project: {
+                created_at_minus_1_day: {
+                    $dateSubtract: {
+                    startDate: "$created_at",
+                    unit: "day",
+                    amount: 1
+                    }
+                }
+            }
+        }
+        ])
+
+    >> db.students.aggregate(
+        [
+            {
+                $group:{
+                    _id:{
+                        $year:"$dob"
+                    },
+                    names:{
+                        $push:"$name"
+                    }
+                }
+            }
+        ]
+    )
+
+============================================================
+
+>> Managed (Respobilites by Third party (Atlas)) // AUto Replication //Auto Sharding
+    UnManaged DataBase(U need to do)
