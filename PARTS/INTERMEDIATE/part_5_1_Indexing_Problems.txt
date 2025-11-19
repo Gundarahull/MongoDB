@@ -1,0 +1,227 @@
+🧪 Hands-On Index Exercise Sheet
+Q1. Find user by email
+
+Query:
+
+db.users.find({ email: "dev@example.com" })
+
+
+👉 What index will you create?
+👉 Why?
+
+>> db.users.createIndex({email:1}) , beacuse i am finding only one column 
+
+
+Q2. Show last orders of a user
+
+Query:
+
+db.orders.find({ userId: U }).sort({ createdAt: -1 }).limit(20)
+
+
+👉 Best index?
+👉 Why order matters?
+>> db.orders.createIndex({createdAt:-1}), beacuse we want to fetch only latest ones
+
+Q3. Search active products by category & price filter
+
+Query:
+
+db.products.find({
+  category: "Laptop",
+  active: true,
+  price: { $lt: 75000 }
+}).sort({ ratingAvg: -1 })
+
+
+👉 Best compound index?
+👉 Why price shouldn't come first?
+
+db.products.createIndex({category:1,ratingAvg:-1})
+Price always varies from time to time eg:Big Billon Days, Festival Sales etc
+
+Q4. Products search bar
+
+Query:
+
+db.products.find({ $text: { $search: "wireless earbuds" } })
+
+
+👉 What index?
+👉 Bonus: what if your search engine must support autocomplete?
+db.products.createIndex({title:'text'}
+)
+
+Q5. Only fetch paid orders dashboard
+
+Query:
+
+db.orders.find({
+  status: "PAID",
+  createdAt: { $gte: ISODate("2025-01-01") }
+})
+
+
+👉 Ideal index?
+👉 Use partial index?
+>> Ideal Index will be using Parital Index , beacuse we are in only limited status >> status only be paid, unpiad, cancelled
+
+Q6. Array field filtering
+
+Products like:
+
+{ title: "iPhone", tags: ["phone", "ios", "apple"] }
+
+
+Query:
+
+db.products.find({ tags: "ios" })
+
+
+👉 Which index type applies?
+>> MultiKey Index , Index on array fields
+dp.products.createIndex({tags:1})
+
+
+Q7. Prevent duplicate email sign-ups
+
+👉 What index?
+👉 Why in real life sometimes we add a collation?
+>> Unique Index db.users.createIndex({email:1},{unique:true})
+>> At the time of registartion, we need to avoid duplicate users right 
+
+Q8. Delete session automatically after 30 min
+
+Docs:
+
+{ sessionId: "...", expiresAt: <Date> }
+
+
+👉 What index?
+👉 Why TTL index is useful?
+>> Time_To_Live
+db.users.createIndex({otp:1},{expiresAt:60}) // 60 secs
+>>in case of Refresh token for login purpose etc
+
+Q9. Find logs by flexible/dynamic fields
+
+Logs example:
+
+{ msg: "error", meta: { env: "prod", ip: "10.2.1.4", host: "api01" } }
+
+
+Query:
+
+db.logs.find({ "meta.env": "prod" })
+
+
+👉 Best index?
+(Hint: unknown/dynamic keys allowed)
+>> WildCard Index
+>> db.logs.createIndex({"meta.$**":1}) // adding index what ever in the meta object
+
+Q10. Unique product slug (SEO)
+
+Example:
+
+/products/apple-iphone-15-pro
+
+
+👉 Index for slug uniqueness?
+>> for uniqueness usingg unique index
+
+==========================================================================================
+
+🚧 Scenario Questions (Answer all)
+Q1.
+
+Your query uses:
+
+db.users.find({ country: "IN" }).sort({ lastLogin: -1 }).limit(50)
+
+
+Current index:
+
+{ lastLogin: -1 }
+
+
+❓ Why is this slow? What's the correct index?
+>> its not querying or fetching country and lastLogin, only fetchig on lastLogin
+>> to have fast query >> db.users.createIndex({country:1},{lastLogin:-1})
+Q2.
+
+E-commerce revenue dashboard runs:
+
+db.orders.find({
+  status: { $in: ["PAID", "SHIPPED"] },
+  createdAt: { $gte: last30Days }
+})
+
+
+❓ Should we use partial index or normal index? Why?
+>> It sbetter to paritial index, because in the status only minimum repeated fields like PAID, SHIPPED, DELIVERED
+
+Q3.
+
+You have a text index on title + description.
+Now you try to add another text index on tags.
+
+❓ What happens and how to do it correctly?
+
+db.users.createIndex({tags:1}) >> it will be useful to fetch in the ARRAY text like ["Mobile","Phone"]
+
+Q4.
+
+Query:
+
+db.products.find({ category: "Laptop", price: { $gt: 50000 } })
+
+
+Index options:
+
+{ category: 1, price: 1 }
+
+{ price: 1, category: 1 }
+
+❓ Which is correct and why?
+>> {category:1, price:1} its correct, first it will search the catgory then it will goes to price, its like a real life(when we more focused on the category),
+>> Samw when we Focused on the Price like E commerce Websites Price Sort >> then {price:1,catgory :1} will be correct
+>> The indec options differ accoridng to the situation 
+
+Q5.
+
+You query users by:
+
+email
+username
+phone
+
+
+❓ Should you create 3 separate indexes or 1 compound index? Why?
+>> I will create single Index+unique Index on email, beacuse it will have uniqueness
+
+Q6.
+
+Query:
+
+db.logs.find({ level: "ERROR", createdAt: { $gte: today } })
+
+
+Logs are huge.
+
+❓ Which index?
+❓ Why not hash index here?
+>> WildCard Index
+>> Hash index there will be no dynamic, but in the WildCard index its totally dynamic one
+
+Q7.
+
+Explain covered query in one sentence and give a simple example.
+>> The fields which are in the query , all are in the parts of index, every field is have own index
+>>  db.users.find({email:"abc@example.com",{$text:{$search:"Rahul"}}})
+
+Q8.
+
+MongoDB COLLSCAN happened even though you created an index.
+❓ Name 2 possible reasons.
+>> dont knwo
