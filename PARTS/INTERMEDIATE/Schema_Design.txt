@@ -1,0 +1,319 @@
+📄 MongoDB Intermediate Test — Schema Design
+✅ Section A — Concepts (Short Answers)
+Q1.
+
+What is the main difference between Embedding and Referencing in MongoDB?
+When should each be used?
+>> Embedding means storing the data in the one model itself, 
+    eg: Storing the address data in the User model itself
+    . Referencing means creating separate model and linking with Primary table like Foreign Key
+    eg , Users (Primary Table) Orders (Refernce table)
+
+Q2.
+
+In MongoDB, why embedding too much data in a document may cause performance issues?
+(Name 2 reasons)
+>> to fetch , its takes time, which is not good for real time things, 
+>> It will give no chances for Scalablity
+
+✅ Section B — Practical Modeling
+Q3. Design schema for this scenario:
+
+A user in an app can save multiple addresses.
+Max addresses = 5 per user.
+Addresses are always fetched with user.
+
+Choose Embed or Reference, and give a sample document.
+>> I will choose embed , beacuse it only max 5 right
+Sample Schema Design
+db.createCollection('users',{
+    validator:{
+        $jsonSchema:{
+            bsonType:"object",
+            properties:{
+                address:{
+                        bsonType:"array",
+                        maxItems:5
+                    }
+            }
+        }
+    }
+
+})
+
+Q4.
+
+A student can enroll in multiple courses
+A course has many students
+This grows large over time.
+
+Design a schema (collections + fields) and decide embed or reference.
+
+>> I will go with Refernce, beacuse it has lot of courses for students
+db.createCollection('students',{
+    validator:{
+        $jsonSchema:{
+            bsonType:"object",
+            required:['course_id'],
+            properties:{
+                name:{
+                    bsonType:["string]
+                },
+                course_id:{
+                    bsonType:['objectId'],
+                    reference:'courses'
+                }
+            }
+        }
+    }
+
+})
+
+✅ Section C — Advanced Reasoning
+Q5.
+
+You are building YouTube-like comments on videos.
+Each video can receive millions of comments.
+
+Should you embed comments in video documents or store in separate collection?
+Explain why.
+>> I will go with Refence , if i choose embed it becomes to large data, which is not scalable, not performance
+>> Referencing will be speed up, Scalablity
+
+✅ Section D — JSON Schema Validation
+Q6.
+
+Write a simple MongoDB JSON schema validator for a users collection:
+
+required fields: name (string), email (string)
+
+age must be integer between 18–80
+
+Write only the JSON part (not the full command).
+ >> $jsonSchema:{
+            bsonType:"object",
+            required:['name,email'],
+            properties:{
+                name:{
+                    bsonType:["string]
+                },
+                email:{
+                    bsonType:["string]
+                },
+                age:{
+                    bsonType:["int"],
+                    minimum:18,
+                    maximum:80
+                }
+            }
+        }
+
+
+===============================================================================
+
+🏦 Real-World Challenge #1 — E-Commerce System (Amazon-like)
+Requirements
+🧍 Users
+
+Basic fields: name, email, phone
+
+Multiple addresses (typical user has 2–3)
+
+🛍 Products
+
+Title, price, category, stock
+
+Price may change over time
+
+📦 Orders
+
+User places many orders
+
+Order must store:
+
+products purchased
+
+price at the time of purchase (not future price)
+
+💬 Reviews
+
+Users can leave reviews on products
+
+Each review has rating (1-5) + comment
+
+❓ Your Task
+
+Design the MongoDB schema for:
+
+1️⃣ users
+2️⃣ products
+3️⃣ orders
+4️⃣ reviews
+
+Mandatory decisions
+
+For each:
+
+Item	Embed or Reference?	Why?
+
+Specifically address:
+
+Should user addresses be embedded?
+
+Should order items embed product info?
+
+Should reviews be embedded inside product or separate collection?
+
+How to store historical price inside orders?
+
+Output Format (Follow This)
+✅ Collections List
+users
+products
+orders
+reviews
+
+✅ Sample user document
+{
+  ...
+}
+
+✅ Embed / Reference Justification Table
+Data	Embed / Reference	Reason
+address(users collection) embedded            Only max 3
+user_id,product_id (orders collection) reference Products have many orders, User can purchase many orders, there is no limit for this
+user_id,product_id (reviews collection) reference Products have many reviews and comments, User can write  many comments and ratings, there is no limit for this
+
+
+>> users collection
+db.createCollection('users',{
+    $validator:{
+        $jsonSchema:{
+            bsonType:'object',
+            required:["name","email","phone"],
+            properties:{
+                name:{
+                    bsonType:'string'
+                },
+                email:{
+                    bsonType:'string'
+                },
+                phone:{
+                    bsonType:'string'
+                },
+                // setting up as a string becuase i am assuming the number should have country code like +91
+                address:{
+                    bsonType:'array',
+                    minItems:1,
+                    maxItems:3,
+                    items:{
+                        bsonType:'object',
+                        required:['pincode','street'],
+                        properties:{
+                            street:{
+                                bsonType:'string'
+                            },
+                            pincode:{
+                                bsonType:'int'
+                            },
+                            city:{
+                                bsonType:'string'
+                            }
+                            state:{
+                                bsonType:'string'
+                            }
+                        }
+                    }
+                    
+                }
+
+            }
+        }
+    }
+})
+
+>> products collection
+db.createCollection('products',{
+    validator:{
+        $jsonSchema:{
+            bsonType:'object',
+            required:['title','category']
+            properties:{
+                title:{
+                    bsonType:'string'
+                },
+                price:{
+                        bsonType:'int'
+                },
+                category:{
+                        bsonType:'string'
+                }
+                stock:{
+                        bsonType:'string'
+                }
+
+            }
+        }
+    }
+})
+
+>> Orders Collection
+db.createCollection('orders',{
+    validator:{
+        $jsonSchema:{
+            bsonType:'object',
+            required:['user_id','product_id']
+            properties:{
+                user_id:{
+                    bsonType:'objectId',
+                     ref:'users' // which will be helpful for populate
+                    
+                },
+                product_id:{
+                        bsonType:'objectId'
+                        ref:'products' // which will be helpful for populate
+                        
+                },
+                current_price:{
+                        bsonType:'int'
+                }
+                date:{
+                        bsonType:'date'
+                }
+
+            }
+        }
+    }
+})
+
+>> Reviews Collection
+db.createCollection('reviews',{
+    validator:{
+        $jsonSchema:{
+            bsonType:'object',
+            required:['user_id','product_id']
+            properties:{
+                user_id:{
+                    bsonType:'objectId',
+                     ref:'users' // which will be helpful for populate
+                    
+                },
+                product_id:{
+                        bsonType:'objectId'
+                        ref:'products' // which will be helpful for populate
+                        
+                },
+                rating:{
+                        bsonType:'int'
+                }
+                comment:{
+                        bsonType:'string'
+                },
+                date:{
+                    bsonType:'date'
+                }
+
+            }
+        }
+    }
+})
